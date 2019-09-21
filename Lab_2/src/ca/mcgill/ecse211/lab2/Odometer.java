@@ -95,20 +95,40 @@ public class Odometer implements Runnable {
   public void run() {
     long updateStart, updateEnd;
 
+    int prevl = 0;
+    int prevr = 0;
+    
     while (true) {
       updateStart = System.currentTimeMillis();
 
       leftMotorTachoCount = leftMotor.getTachoCount();
       rightMotorTachoCount = rightMotor.getTachoCount();
 
-      double dl = leftMotorTachoCount*WHEEL_RAD*Math.PI/180;
-      double dr = rightMotorTachoCount*WHEEL_RAD*Math.PI/180;
-      double d = (dl + dr)/2;
-      double dtheta = d/TRACK; //angle in radians
+      int lc = leftMotorTachoCount - prevl;
+      int rc = rightMotorTachoCount - prevr;
       
-      double dy = Math.cos(dtheta) * d;
-      double dx = Math.sin(dtheta) * d;
+      prevl = leftMotorTachoCount;
+      prevr = rightMotorTachoCount;
+      
+      double dl = lc*WHEEL_RAD*Math.PI/180;
+      double dr = rc*WHEEL_RAD*Math.PI/180;
+      
+      System.out.println("        " + (dl-dr));
+      //System.out.println("ltaco = " + lc + " & dl = " + dl);
+      //System.out.println("rtaco = " + rc + " & dr = " + dr);
+      
+      double d = (dl + dr)/2;
+      
+      double dtheta = (dr-dl)/TRACK; //in radians
+
+    		  
+      //System.out.println("detheta = " + dtheta);
+      
+      double dy = Math.cos(dtheta/2+(theta*Math.PI/180)) * d;
+      double dx = Math.sin(dtheta/2+(theta*Math.PI/180)) * d;
       double dt = dtheta * 180 / Math.PI;
+      
+      //System.out.println(dx + " , " + dy + " , " + dt);
       odo.update(dx, dy, dt);
       // TODO Calculate new robot position based on tachometer counts
       
@@ -118,8 +138,6 @@ public class Odometer implements Runnable {
       // this ensures that the odometer only runs once every period
       
       updateEnd = System.currentTimeMillis();
-      leftMotor.resetTachoCount();
-      rightMotor.resetTachoCount();
       if (updateEnd - updateStart < ODOMETER_PERIOD) {
         try {
           Thread.sleep(ODOMETER_PERIOD - (updateEnd - updateStart));
